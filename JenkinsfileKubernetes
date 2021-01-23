@@ -1,0 +1,35 @@
+node{
+     
+    stage('SCM Checkout'){
+        git url:  'https://github.com/prakashk0301/spring-boot-mongo-docker.git',branch: 'master'
+    }
+    
+    stage(" Maven Clean Package"){
+  //    def mavenHome =  tool name: "Maven-3.6.1", type: "maven"
+  //    def mavenCMD = "${mavenHome}/bin/mvn"
+      sh "mvn clean package"
+      
+    } 
+    
+    
+    stage('Build Docker Image'){
+        sh 'docker rmi -f pkw0301/spring-boot-mongo'
+        sh 'docker build -t pkw0301/spring-boot-mongo .'
+    }
+    
+    stage('Push Docker Image')
+    {
+    withDockerRegistry(credentialsId: 'DockerHubAccount', url: 'https://index.docker.io/v1/') {
+    sh 'docker push pkw0301/spring-boot-mongo'
+    }
+     
+     
+     stage("Deploy To Kuberates Cluster"){
+  kubernetesDeploy configs: 'springBootMongo.yml', kubeConfig: [path: ''], kubeconfigId: 'kubeconfig', secretName: '', ssh: [sshCredentialsId: '*', sshServer: ''], textCredentials: [certificateAuthorityData: '', clientCertificateData: '', clientKeyData: '', serverUrl: 'https://']
+     }
+	 
+    
+}
+}
+
+
